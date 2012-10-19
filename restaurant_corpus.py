@@ -6,6 +6,7 @@ import nltk, os, re
 
 #This function prepares the data by formatting it correctly so everything can be read in to a dictionary
 def prepareData(raw):
+	raw = raw.replace('\xe2\x80\x99', "'") #Replaces apostrophe characters with normal one
 	raw = raw.replace('\xc2\xa0', ' ') #Removes Non-Breaking Spaces
 	if 'Aldrin' in raw:
 		#Special Aldrin path because his files are formatted differently
