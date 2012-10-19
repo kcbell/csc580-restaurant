@@ -14,13 +14,20 @@ N = 4 # n-fold cross-validation
 def rms(classifier, gold):
     results = classifier.batch_classify([fs for (fs,l) in gold]) 
     diffs = [float((l-r)**2) for ((fs, l), r) in zip(gold, results)]
-    return sqrt(sum(diffs)/len(diffs))
+    return sqrt(float(sum(diffs))/len(diffs))
+
+def binaryrms(classifier, gold):
+    results = classifier.batch_classify([fs for (fs,l) in gold]) 
+    diffs = [0.0 if l==r else 1.0 for ((fs, l), r) in zip(gold, results)]
+    return sqrt(float(sum(diffs))/len(diffs))
 
 def getTagger():
     # lazy init
     if not hasattr(getTagger, 'tagger'):
         brown_tagged_sents = brown.tagged_sents(categories='news',simplify_tags=True)
-        getTagger.tagger = nltk.UnigramTagger(brown_tagged_sents)
+        t0 = nltk.DefaultTagger('NN')
+        t1 = nltk.UnigramTagger(brown_tagged_sents, backoff=t0)
+        getTagger.tagger = nltk.BigramTagger(brown_tagged_sents, backoff=t1)
     return getTagger.tagger
 
 def makeWordList(para_list):
@@ -35,7 +42,6 @@ def makeWordList(para_list):
 #Most frequent 30, least frequent 10
 '''
 def makeWordList(para_list):
-    # Most frequent 30, least frequent 10
     words = []
     for (para, rating) in para_list:
         words.extend([w for w in para])
@@ -62,10 +68,21 @@ def getParaFeatures(para, wordList):
     features = {};
     paraSet = set(para)
     for word in wordList:
-        features['contains({0})'.format(word)] = word in paraSet
-    features['numWords'] = len(para)
+        if word in paraSet:
+            count = 0;
+            cur = -1;
+            try:
+                while True:
+                    cur = para.index(word, cur+1)
+                    if (cur > 0):
+                        before = para[cur-1]
+                        count += -1 if (before in ['not',"'nt","'n't"]) else 1
+            except ValueError:
+                pass
+            features['contains(%s)' % word] = count >= 0   
+        else: # for now
+            features['contains(%s)' % word] = False
     features['distinctWords'] = len(paraSet)
-    features['firstWord'] = para[0]
     return features
 
 def exercise1():
@@ -75,8 +92,6 @@ def exercise1():
     random.shuffle(feature_sets)
     classifiers = crossvalidate.crossValidate(NaiveBayesContinuousClassifier.train, rms, feature_sets, N)
     print N, "-fold cross validation average RMS: ", sum(a for (c, a) in classifiers) / len(classifiers)
-    #print "20 Most informative features for first classifier: "
-    #classifiers[0][0].show_most_informative_features(20)     
     return NaiveBayesContinuousClassifier.train(feature_sets);
 
 def makeReviewTuple(review, rating):
@@ -98,9 +113,7 @@ def exercise2():
     feature_sets = [(getReviewFeatures(review, word_list), rating) for (review, rating) in review_list]
     random.shuffle(feature_sets)
     classifiers = crossvalidate.crossValidate(NaiveBayesContinuousClassifier.train, rms, feature_sets, N)
-    print N, "-fold cross validation average RMS: ", sum(a for (c, a) in classifiers) / len(classifiers)
-    #print "20 Most informative features for first classifier: "
-    #classifiers[0][0].show_most_informative_features(20)     
+    print N, "-fold cross validation average RMS: ", sum(a for (c, a) in classifiers) / len(classifiers)    
     return NaiveBayesContinuousClassifier.train(feature_sets);
 
 def makeReviewAuthorList(reviews):
@@ -110,17 +123,17 @@ def makeReviewAuthorList(reviews):
     return review_list
 
 def getReviewAuthorFeatures(review, wordList):
-    return getParaFeatures(review, wordList) # for now
+    features = getParaFeatures(review, wordList)
+    features['numWords'] = len(review)
+    return features
 
 def exercise3():
     review_list = makeReviewAuthorList(restaurant_corpus.restaurant_corpus)
     word_list = makeWordList(review_list)
     feature_sets = [(getReviewAuthorFeatures(review, word_list), rating) for (review, rating) in review_list]
     random.shuffle(feature_sets)
-    classifiers = crossvalidate.crossValidate(nltk.NaiveBayesClassifier.train, nltk.classify.accuracy, feature_sets, N)
-    print N, "-fold cross validation average accuracy: ", sum(a for (c, a) in classifiers) / len(classifiers)
-    #print "20 Most informative features for first classifier: "
-    #classifiers[0][0].show_most_informative_features(20)     
+    classifiers = crossvalidate.crossValidate(nltk.NaiveBayesClassifier.train, binaryrms, feature_sets, N)
+    print N, "-fold cross validation average RMS: ", sum(a for (c, a) in classifiers) / len(classifiers)    
     return nltk.NaiveBayesClassifier.train(feature_sets);
 
 def main():
