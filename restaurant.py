@@ -125,6 +125,14 @@ def makeReviewAuthorList(reviews):
 def getReviewAuthorFeatures(review, wordList):
     features = getParaFeatures(review, wordList)
     features['numWords'] = len(review)
+    # I added the following lines. It seems to decrease the rms by .01-.04
+    fdist = nltk.FreqDist(review)               
+    features['mostOccuringWord'] = fdist[0]
+    #features['2ndmostOccuringWord'] = fdist[1]
+    #features['3rdmostOccuringWord'] = fdist[2]
+    features['leastOccuringWord'] = fdist[-1]
+    features['1stBiGram'] = ' '.join(review[:2])
+    features['lastBiGram'] = ' '.join(review[-2:])
     return features
 
 def exercise3():
@@ -147,7 +155,7 @@ def exercise4():
     matrix = confusion_matrix.initMatrix(list(set([auth for (review,auth) in review_list])))
     for (review,auth) in review_list:
         pAuth = classifier.classify(getReviewAuthorFeatures(review,word_list))
-        matrix = confusion_matrix.keepScore(pAuth,auth,matrix)
+        confusion_matrix.keepScore(pAuth,auth,matrix)
     confusion_matrix.drawMatrix(matrix,30)
     return classifier
 

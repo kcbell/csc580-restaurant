@@ -42,7 +42,6 @@ def keepScore(predicted,actual,matrix):
     idx1 = matrix[0].index(actual)
     idx2 = matrix[0].index(predicted)
     matrix[idx1][idx2] += 1
-    return matrix
 
 
 #--------------------------------#
@@ -60,12 +59,12 @@ def drawMatrix(matrix, column):
     print 'confusion matrix'
     print '----------------'
     print '   -> predicted authors *names are converted to initials'
-    totalCol = len(matrix[0])
+    totalCol = len(matrix[0])  #total number of authors (columns)
 
-    while totalCol > 0 :
-        if totalCol > column:
+    while totalCol > 0 :       #until all columns are printed
+        if totalCol > column:  #if all columns do not fit in the screen
             col = column
-        else:
+        else:                  #otherwise, print all columns at once
             col = totalCol
             
         for i in range(len(matrix[0])):
@@ -82,7 +81,7 @@ def drawMatrix(matrix, column):
                 else:
                     line = line + ('|%2d' % matrix[i][j])
             print line
-        totalCol -= col
+        totalCol -= col        #remaining columns to be printed
             
 
     
