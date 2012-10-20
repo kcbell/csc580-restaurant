@@ -3,7 +3,7 @@ Driver for the Restaurant corpus analysis
 '''
 
 import nltk, random, operator
-import restaurant_corpus, crossvalidate
+import restaurant_corpus, crossvalidate, confusion_matrix
 
 from math import sqrt
 from classifier_utils import NaiveBayesContinuousClassifier
@@ -136,6 +136,21 @@ def exercise3():
     print N, "-fold cross validation average RMS: ", sum(a for (c, a) in classifiers) / len(classifiers)    
     return nltk.NaiveBayesClassifier.train(feature_sets);
 
+def exercise4():
+    review_list = makeReviewAuthorList(restaurant_corpus.restaurant_corpus)
+    word_list = makeWordList(review_list)
+    feature_sets = [(getReviewAuthorFeatures(review, word_list), rating) for (review, rating) in review_list]
+    random.shuffle(feature_sets)
+    classifiers = crossvalidate.crossValidate(nltk.NaiveBayesClassifier.train, binaryrms, feature_sets, N)
+    print N, "-fold cross validation average RMS: ", sum(a for (c, a) in classifiers) / len(classifiers)    
+    classifier = nltk.NaiveBayesClassifier.train(feature_sets)
+    matrix = confusion_matrix.initMatrix(list(set([auth for (review,auth) in review_list])))
+    for (review,auth) in review_list:
+        pAuth = classifier.classify(getReviewAuthorFeatures(review,word_list))
+        matrix = confusion_matrix.keepScore(pAuth,auth,matrix)
+    confusion_matrix.drawMatrix(matrix,30)
+    return classifier
+
 def main():
     print "Exercise 1:"
     classifier1 = exercise1()
@@ -143,6 +158,8 @@ def main():
     classifier2 = exercise2()
     print "Exercise 3:"
     classifier3 = exercise3()
+    print "Exercise 4:"
+    classifier4 = exercise4()
 
 if __name__ == '__main__':
     main()
