@@ -42,7 +42,8 @@ class TrainingReview:
 			#Initializes the written review field
 			self.reviews['writtenreview'].append(arr)
 
-	def __init__(self, training_data_arr):
+	def __init__(self, training_data_arr, reviewname):
+		self.reviewname = reviewname
 		self.reviews = dict()
 		for dataArr in training_data_arr:
 			TrainingReview.initializeDict(self, dataArr)
@@ -58,15 +59,19 @@ def constructCorpus(dataDir):
 
 		#Before initializing the TrainingReview class the data_list is split up if it contains multiple reviews
 		indexList = [i for i,word in enumerate(data_list) if word.startswith('REVIEWER')]
+		reviewNum = 1
 		startPos = 0
 		if len(indexList) > 1:
 			for i in indexList[1:]:
 				review_arr = [nltk.word_tokenize(w) for w in data_list[startPos:i]]
-				corpus.append(TrainingReview(review_arr))
+				reviewname = file + "-" + str(reviewNum)
+				corpus.append(TrainingReview(review_arr, reviewname))
+				reviewNum += 1
 				startPos = i
 
 		review_arr = [nltk.word_tokenize(w) for w in data_list[startPos:]]
-		corpus.append(TrainingReview(review_arr))
+		reviewname = file + "-" + str(reviewNum)
+		corpus.append(TrainingReview(review_arr, reviewname))
 
 	return corpus
 

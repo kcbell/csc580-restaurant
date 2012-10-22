@@ -18,5 +18,5 @@ def crossValidate(classifierBuilder, tester, data, n):
         train = reduce(lambda x, y: x + y, chunks[:i] + chunks[i+1:])
         classify = classifierBuilder(train)
         accuracy = tester(classify, test)
-        classifiers.append((classify, accuracy))
+        classifiers.append((classify, accuracy, test))
     return classifiers

@@ -85,13 +85,16 @@ def getParaFeatures(para, wordList):
     features['distinctWords'] = len(paraSet)
     return features
 
-def exercise1():
-    para_list = makeParaList(restaurant_corpus.restaurant_corpus)
+def e1feature_sets(corpus):
+    para_list = makeParaList(corpus)
     word_list = makeWordList(para_list)
-    feature_sets = [(getParaFeatures(para, word_list), rating) for (para, rating) in para_list]
+    return [(getParaFeatures(para, word_list), rating) for (para, rating) in para_list]
+
+def exercise1(corpus):
+    feature_sets = e1feature_sets(corpus)
     random.shuffle(feature_sets)
     classifiers = crossvalidate.crossValidate(NaiveBayesContinuousClassifier.train, rms, feature_sets, N)
-    print N, "-fold cross validation average RMS: ", sum(a for (c, a) in classifiers) / len(classifiers)
+    outputResults(classifiers)
     return NaiveBayesContinuousClassifier.train(feature_sets);
 
 def makeReviewTuple(review, rating):
@@ -107,13 +110,16 @@ def makeReviewList(reviews):
 def getReviewFeatures(review, wordList):
     return getParaFeatures(review, wordList) # for now
 
-def exercise2():
-    review_list = makeReviewList(restaurant_corpus.restaurant_corpus)
+def e2feature_sets(corpus):
+    review_list = makeReviewList(corpus)
     word_list = makeWordList(review_list)
-    feature_sets = [(getReviewFeatures(review, word_list), rating) for (review, rating) in review_list]
+    return [(getReviewFeatures(review, word_list), rating) for (review, rating) in review_list]
+
+def exercise2(corpus):
+    feature_sets = e2feature_sets(corpus)
     random.shuffle(feature_sets)
     classifiers = crossvalidate.crossValidate(NaiveBayesContinuousClassifier.train, rms, feature_sets, N)
-    print N, "-fold cross validation average RMS: ", sum(a for (c, a) in classifiers) / len(classifiers)    
+    outputResults(classifiers)
     return NaiveBayesContinuousClassifier.train(feature_sets);
 
 def makeReviewAuthorList(reviews):
@@ -126,7 +132,7 @@ def getReviewAuthorFeatures(review, wordList):
     features = getParaFeatures(review, wordList)
     features['numWords'] = len(review)
     # I added the following lines. It seems to decrease the rms by .01-.04
-    fdist = nltk.FreqDist(review)               
+    fdist = nltk.FreqDist(review).keys()
     features['mostOccuringWord'] = fdist[0]
     #features['2ndmostOccuringWord'] = fdist[1]
     #features['3rdmostOccuringWord'] = fdist[2]
@@ -135,22 +141,22 @@ def getReviewAuthorFeatures(review, wordList):
     features['lastBiGram'] = ' '.join(review[-2:])
     return features
 
-def exercise3():
-    review_list = makeReviewAuthorList(restaurant_corpus.restaurant_corpus)
+def e3feature_sets(corpus):
+    review_list = makeReviewAuthorList(corpus)
     word_list = makeWordList(review_list)
-    feature_sets = [(getReviewAuthorFeatures(review, word_list), rating) for (review, rating) in review_list]
+    return [(getReviewAuthorFeatures(review, word_list), rating) for (review, rating) in review_list]
+
+def exercise3(corpus):
+    feature_sets = e3feature_sets(corpus)
     random.shuffle(feature_sets)
     classifiers = crossvalidate.crossValidate(nltk.NaiveBayesClassifier.train, binaryrms, feature_sets, N)
-    print N, "-fold cross validation average RMS: ", sum(a for (c, a) in classifiers) / len(classifiers)    
+    outputResults(classifiers)
     return nltk.NaiveBayesClassifier.train(feature_sets);
 
-def exercise4():
-    review_list = makeReviewAuthorList(restaurant_corpus.restaurant_corpus)
+def exercise4(corpus):
+    review_list = makeReviewAuthorList(corpus)
     word_list = makeWordList(review_list)
     feature_sets = [(getReviewAuthorFeatures(review, word_list), rating) for (review, rating) in review_list]
-    random.shuffle(feature_sets)
-    classifiers = crossvalidate.crossValidate(nltk.NaiveBayesClassifier.train, binaryrms, feature_sets, N)
-    print N, "-fold cross validation average RMS: ", sum(a for (c, a) in classifiers) / len(classifiers)    
     classifier = nltk.NaiveBayesClassifier.train(feature_sets)
     matrix = confusion_matrix.initMatrix(list(set([auth for (review,auth) in review_list])))
     for (review,auth) in review_list:
@@ -159,15 +165,29 @@ def exercise4():
     confusion_matrix.drawMatrix(matrix,30)
     return classifier
 
+def outputResults(classifiers):
+    for i in range(len(classifiers)):
+        (c,a,t) = classifiers[i]
+        print "   Random Validation Set %d: " % (i+1) #TODO: filenames
+        print "   Average RMS error rate on validation set: " + str(a)
+        print
+
 def main():
-    print "Exercise 1:"
-    classifier1 = exercise1()
-    print "Exercise 2:"
-    classifier2 = exercise2()
-    print "Exercise 3:"
-    classifier3 = exercise3()
+    print "Starting classifier..."
+    corpus = restaurant_corpus.restaurant_corpus
+    test = restaurant_corpus.constructCorpus("test/")
+    print "%d training reviews found, %d test reviews found" % (len(corpus), len(test))
+    print "Exercise 1 validation:"
+    classifier1 = exercise1(corpus)
+    print "Exercise 2 validation:"
+    classifier2 = exercise2(corpus)
+    print "Exercise 3 validation:"
+    classifier3 = exercise3(corpus)
     print "Exercise 4:"
-    classifier4 = exercise4()
+    classifier4 = exercise4(corpus)
+    print "Starting to process test set"
+    for r in test:
+        pass # TODO
 
 if __name__ == '__main__':
     main()
