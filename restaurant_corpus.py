@@ -47,6 +47,9 @@ class TrainingReview:
 		self.reviews = dict()
 		for dataArr in training_data_arr:
 			TrainingReview.initializeDict(self, dataArr)
+			
+	def getAuthorName(self):
+		return reduce(lambda x, y: x + " " + y, self.reviews['reviewer'])
 	
 #This function construct the restaurant corpus from html files in given path
 def constructCorpus(dataDir):
