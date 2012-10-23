@@ -2,14 +2,12 @@
 Driver for the Restaurant corpus analysis
 '''
 
-import nltk, random, operator
+import nltk, random, operator, sys
 import restaurant_corpus, crossvalidate, confusion_matrix, review_features
 
 from math import sqrt
 from classifier_utils import NaiveBayesContinuousClassifier
 from nltk.corpus import brown
-
-N = 4 # n-fold cross-validation
 
 def rms(classifier, gold):
     results = classifier.batch_classify([fs for (fs, l) in gold]) 
@@ -58,6 +56,11 @@ def outputResults(classifiers):
         print "   Random Validation Set %d: " % (i + 1), [r.reviewname for r in t]
         print "   Average RMS error rate on validation set: " + str(a)
         print
+        
+def outputConciseResults(classifiers):
+    n = len(classifiers)
+    total = sum([float(a) for (c,a,t) in classifiers])
+    print "   Avg. RMS over %d runs: %f" % (n, total / n)
 
 # tranform datum into (featureset, label) tuples
 def toLabeledFeatureSetDatum(datum, data_xform, features):
@@ -87,30 +90,30 @@ def doExercise(data, data_xform, trainer, features, tester=None, n=None, output=
             output(results)
     return buildClassifier(data)
 
-def exercise1(corpus):
+def exercise1(corpus, n, out):
     wordLists = getWordListsFromXForm(corpus, paraXForm)
     posWords = review_features.posWordList(wordLists)
     features = [review_features.createNetPositiveOccurenceFeature(posWords, 'pos'),
                 review_features.distinctWordsFeature]
-    classifier = doExercise(corpus, paraXForm, NaiveBayesContinuousClassifier.train, features, rms, N, outputResults)
+    classifier = doExercise(corpus, paraXForm, NaiveBayesContinuousClassifier.train, features, rms, n, out)
     return (paraXForm, features, classifier)
 
-def exercise2(corpus):
+def exercise2(corpus, n, out):
     wordLists = getWordListsFromXForm(corpus, reviewXForm)
     posWords = review_features.posWordList(wordLists)
     features = [review_features.createNetPositiveOccurenceFeature(posWords, 'pos'),
                 review_features.distinctWordsFeature]
-    classifier = doExercise(corpus, reviewXForm, NaiveBayesContinuousClassifier.train, features, rms, N, outputResults)
+    classifier = doExercise(corpus, reviewXForm, NaiveBayesContinuousClassifier.train, features, rms, n, out)
     return (reviewXForm, features, classifier)
 
-def exercise3(corpus):
+def exercise3(corpus, n, out):
     wordLists = getWordListsFromXForm(corpus, reviewAuthorXForm)
     freqWords = review_features.freqWordList(wordLists)
     features = [review_features.createContainsFeature(freqWords, 'freq'),
                 review_features.distinctWordsFeature,
                 review_features.mostOccurringWordFeature,
                 review_features.numWordsFeature]
-    classifier = doExercise(corpus, reviewAuthorXForm, nltk.NaiveBayesClassifier.train, features, binaryrms, N, outputResults)
+    classifier = doExercise(corpus, reviewAuthorXForm, nltk.NaiveBayesClassifier.train, features, binaryrms, n, out)
     return (reviewAuthorXForm, features, classifier)
 
 def exercise4(corpus):
@@ -130,33 +133,41 @@ def exercise4(corpus):
     return (reviewAuthorXForm, features, classifier)
 
 def main():
-    print "Starting classifier..."
+    n = 4
+    quiet = "-q" in sys.argv
+    out = outputConciseResults if quiet else outputResults
+    if "-n" in sys.argv:
+        n = int(sys.argv[sys.argv.index("-n") + 1])
+    if not quiet:
+        print "Starting classifier..."
     corpus = restaurant_corpus.restaurant_corpus
     test = sorted(restaurant_corpus.constructCorpus("test/"), key=lambda r: r.reviewname)
-    print "%d training reviews found, %d test reviews found" % (len(corpus), len(test))
+    if not quiet:
+        print "%d training reviews found, %d test reviews found" % (len(corpus), len(test))
     print "Exercise 1 validation:"
     random.shuffle(corpus)
-    (x1, f1, c1) = exercise1(corpus)
+    (x1, f1, c1) = exercise1(corpus, n, out)
     print "Exercise 2 validation:"
     random.shuffle(corpus)
-    (x2, f2, c2) = exercise2(corpus)
+    (x2, f2, c2) = exercise2(corpus, n, out)
     print "Exercise 3 validation:"
     random.shuffle(corpus)
-    (x3, f3, c3) = exercise3(corpus)
-    print "Exercise 4:"
-    random.shuffle(corpus)
-    exercise4(corpus)
-    print "Starting to process test set"
-    for r in test:
-        parasets = toFeatureSetDatum(r, x1, f1)
-        ratings = c1.batch_classify(parasets)
-        overall = c2.classify(toFeatureSetDatum(r, x2, f2)[0])
-        author = c3.classify(toFeatureSetDatum(r, x3, f3)[0])
-        print "Now showing predictions for %s" % r.reviewname
-        print "Paragraph ratings: %f, %f, %f" % (ratings[0], ratings[1], ratings[2])
-        print "Overall rating: %f" % overall
-        print "Author: %s" % author
-        print
+    (x3, f3, c3) = exercise3(corpus, n, out)
+    if not quiet:
+        print "Exercise 4:"
+        random.shuffle(corpus)
+        exercise4(corpus)
+        print "Starting to process test set"
+        for r in test:
+            parasets = toFeatureSetDatum(r, x1, f1)
+            ratings = c1.batch_classify(parasets)
+            overall = c2.classify(toFeatureSetDatum(r, x2, f2)[0])
+            author = c3.classify(toFeatureSetDatum(r, x3, f3)[0])
+            print "Now showing predictions for %s" % r.reviewname
+            print "Paragraph ratings: %f, %f, %f" % (ratings[0], ratings[1], ratings[2])
+            print "Overall rating: %f" % overall
+            print "Author: %s" % author
+            print
 
 if __name__ == '__main__':
     main()
