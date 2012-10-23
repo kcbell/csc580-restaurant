@@ -23,12 +23,11 @@ def posWordList(word_chunks):
     word_list = [w.lower() for (w,t) in tagged if t == 'ADJ' or t == 'ADV']
     return set(word_list)
 
-# Most frequent 50, least frequent 10
+# Most frequent 100
 def freqWordList(word_chunks):
     words = reduce(operator.add, word_chunks)
     all_words = nltk.FreqDist(w.lower() for w in words)
-    word_list = all_words.keys()[:50]
-    word_list.extend(all_words.keys()[-10:])
+    word_list = all_words.keys()[:100]
     return set(word_list)
 
 def createNetPositiveOccurenceFeature(wordList, name):
@@ -43,7 +42,7 @@ def createNetPositiveOccurenceFeature(wordList, name):
                         cur = words.index(word, cur+1)
                         if (cur > 0):
                             before = words[cur-1]
-                            count += -1 if (before in ['not',"'nt","'n't"]) else 1
+                            count += -1 if (before in ["not","'nt","'n't","no","nor"]) else 1
                 except ValueError:
                     pass
                 obj[name + '-netPositive(%s)' % word] = count >= 0   
@@ -59,13 +58,19 @@ def createContainsFeature(wordList, name):
     return containsFeature
 
 def distinctWordsFeature(obj, words):
-    obj['distinctWords'] = len(set(words))
+    obj['distinctWords10'] = len(set(words)) / 10 # reduce to fewer categories
 
 def numWordsFeature(obj, words):
-    obj['numWords'] = len(words)
+    obj['numWords20'] = len(words) / 20 # reduce to fewer categories
 
 def mostOccurringWordFeature(obj, words):
-    obj['mostOccuringWord'] = nltk.FreqDist(words).max()
+    obj['mostOccuringWord'] = nltk.FreqDist([w.lower() for w in words]).max()
+    
+def numAdjAdvFeature(obj, words):
+    unigram_tagger = getPOSTagger()
+    tagged = unigram_tagger.tag(words)
+    word_list = [w.lower() for (w,t) in tagged if t == 'ADJ' or t == 'ADV']
+    obj['numAdjAdv'] = sum([1 for w in words if w in word_list]) / 5 # reduce blah blah
     
 def runFeatures(features, words):
     obj = {}

@@ -92,37 +92,46 @@ def doExercise(data, data_xform, trainer, features, tester=None, n=None, output=
 
 def exercise1(corpus, n, out):
     wordLists = getWordListsFromXForm(corpus, paraXForm)
-    posWords = review_features.posWordList(wordLists)
-    features = [review_features.createNetPositiveOccurenceFeature(posWords, 'pos'),
-                review_features.distinctWordsFeature]
+    freqWords = review_features.freqWordList(wordLists)
+    features = [
+                review_features.createContainsFeature(freqWords, 'freq'),
+                review_features.numWordsFeature,
+               ]
     classifier = doExercise(corpus, paraXForm, NaiveBayesContinuousClassifier.train, features, rms, n, out)
     return (paraXForm, features, classifier)
 
 def exercise2(corpus, n, out):
     wordLists = getWordListsFromXForm(corpus, reviewXForm)
-    posWords = review_features.posWordList(wordLists)
-    features = [review_features.createNetPositiveOccurenceFeature(posWords, 'pos'),
-                review_features.distinctWordsFeature]
+    freqWords = review_features.freqWordList(wordLists)
+    features = [
+                review_features.createContainsFeature(freqWords, 'freq'),
+                review_features.distinctWordsFeature,
+                #review_features.numWordsFeature,
+               ]
     classifier = doExercise(corpus, reviewXForm, NaiveBayesContinuousClassifier.train, features, rms, n, out)
     return (reviewXForm, features, classifier)
 
 def exercise3(corpus, n, out):
     wordLists = getWordListsFromXForm(corpus, reviewAuthorXForm)
     freqWords = review_features.freqWordList(wordLists)
-    features = [review_features.createContainsFeature(freqWords, 'freq'),
+    features = [
+                review_features.createContainsFeature(freqWords, 'freq'),
                 review_features.distinctWordsFeature,
                 review_features.mostOccurringWordFeature,
-                review_features.numWordsFeature]
+                review_features.numWordsFeature,
+               ]
     classifier = doExercise(corpus, reviewAuthorXForm, nltk.NaiveBayesClassifier.train, features, binaryrms, n, out)
     return (reviewAuthorXForm, features, classifier)
 
 def exercise4(corpus):
     wordLists = getWordListsFromXForm(corpus, reviewAuthorXForm)
     freqWords = review_features.freqWordList(wordLists)
-    features = [review_features.createContainsFeature(freqWords, 'freq'),
+    features = [
+                review_features.createContainsFeature(freqWords, 'freq'),
                 review_features.distinctWordsFeature,
                 review_features.mostOccurringWordFeature,
-                review_features.numWordsFeature]
+                review_features.numWordsFeature,
+               ]
     classifier = doExercise(corpus, reviewAuthorXForm, nltk.NaiveBayesClassifier.train, features)
     matrix = confusion_matrix.initMatrix(list(set([review.getAuthorName() for review in corpus])))
     for review in corpus:
