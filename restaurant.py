@@ -92,21 +92,22 @@ def doExercise(data, data_xform, trainer, features, tester=None, n=None, output=
 
 def exercise1(corpus, n, out):
     wordLists = getWordListsFromXForm(corpus, paraXForm)
-    freqWords = review_features.freqWordList(wordLists)
+    posWords = review_features.posWordList(wordLists)
     features = [
-                review_features.createContainsFeature(freqWords, 'freq'),
+                review_features.createSentiFeatures(posWords, 'pos'),
                 review_features.numWordsFeature,
+                review_features.numNegationsFeature,
                ]
     classifier = doExercise(corpus, paraXForm, NaiveBayesContinuousClassifier.train, features, rms, n, out)
     return (paraXForm, features, classifier)
 
 def exercise2(corpus, n, out):
     wordLists = getWordListsFromXForm(corpus, reviewXForm)
-    freqWords = review_features.freqWordList(wordLists)
+    posWords = review_features.posWordList(wordLists)
     features = [
-                review_features.createContainsFeature(freqWords, 'freq'),
+                review_features.createSentiFeatures(posWords, 'pos'),
                 review_features.distinctWordsFeature,
-                #review_features.numWordsFeature,
+                review_features.numNegationsFeature,
                ]
     classifier = doExercise(corpus, reviewXForm, NaiveBayesContinuousClassifier.train, features, rms, n, out)
     return (reviewXForm, features, classifier)
@@ -119,10 +120,15 @@ def exercise3(corpus, n, out):
                 review_features.distinctWordsFeature,
                 review_features.mostOccurringWordFeature,
                 review_features.numWordsFeature,
+                review_features.numNegationsFeature,
                ]
     classifier = doExercise(corpus, reviewAuthorXForm, nltk.NaiveBayesClassifier.train, features, binaryrms, n, out)
     return (reviewAuthorXForm, features, classifier)
 
+# This doesn't work. It just classifies everything right (because that's what 
+# it trained on)... so authorship distance is 0.0 for people to themselves and 
+# 1.0 to everyone else...
+# Toshi, what's going on?
 def exercise4(corpus):
     wordLists = getWordListsFromXForm(corpus, reviewAuthorXForm)
     freqWords = review_features.freqWordList(wordLists)
@@ -131,6 +137,7 @@ def exercise4(corpus):
                 review_features.distinctWordsFeature,
                 review_features.mostOccurringWordFeature,
                 review_features.numWordsFeature,
+                review_features.numNegationsFeature,
                ]
     classifier = doExercise(corpus, reviewAuthorXForm, nltk.NaiveBayesClassifier.train, features)
     matrix = confusion_matrix.initMatrix(list(set([review.getAuthorName() for review in corpus])))
@@ -163,9 +170,6 @@ def main():
     random.shuffle(corpus)
     (x3, f3, c3) = exercise3(corpus, n, out)
     if not quiet:
-        print "Exercise 4:"
-        random.shuffle(corpus)
-        exercise4(corpus)
         print "Starting to process test set"
         for r in test:
             parasets = toFeatureSetDatum(r, x1, f1)
