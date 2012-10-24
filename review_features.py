@@ -62,7 +62,7 @@ def numNegationsFeature(obj, words):
     for word in words:
         if word in ["not","'nt","'n't","no","nor"]:
             count += 1
-    obj['numNegations'] = count
+    obj['numNegations'] = count / 5
 
 def distinctWordsFeature(obj, words):
     obj['distinctWords10'] = len(set(words)) / 10 # reduce to fewer categories
